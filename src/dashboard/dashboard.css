@@ -1,0 +1,7 @@
+.dropdown{
+    padding: 5px 0 5px 12px
+}
+.dropdown:hover{
+    background-color: #007bff;    
+    color: white;
+}
