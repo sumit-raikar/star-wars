@@ -2,14 +2,14 @@ import React, { Component } from 'react';
 import { PLANET_URL } from '../utils/constants';
 import './dashboard.css';
 import { Button, PageHeader } from 'react-bootstrap';
-class Dashboard extends Component {
+import { searchPlanets } from '../action/dashboard';
+import { connect } from 'react-redux';
+
+export class Dashboard extends Component {
     constructor(props) {
         super(props);
         this.state = {
             searchText: '',
-            planets: [],
-            next: null,
-            previous: null,
         }
         this.handleChangeSearchText = this.handleChangeSearchText.bind(this);
         this.onPreviousButtonClick = this.onPreviousButtonClick.bind(this);
@@ -18,24 +18,16 @@ class Dashboard extends Component {
     }
 
     componentDidMount() {
-        if (!(localStorage.getItem('authorized') === 'yes')) {
+        if (!(localStorage.getItem('authorized') === 'true')) {
             this.props.history.push('/');
         } else {
-            const url = `${PLANET_URL}/?search=${this.state.searchText}`;
-            this.fetchPlanets(url);
+        const url = `${PLANET_URL}/?search=${this.state.searchText}`;
+        this.fetchPlanets(url);
         }
     }
 
     fetchPlanets(url) {
-        this.setState({ loading: true });
-        fetch(url)
-            .then(res => res.json())
-            .then(res => this.setState({
-                planets: res.results,
-                next: res.next || null,
-                previous: res.previous || null,
-                loading: false
-            }))
+        this.props.searchPlanets(this.state.searchText, url);
     }
 
     handleChangeSearchText(event) {
@@ -46,11 +38,11 @@ class Dashboard extends Component {
     }
 
     onPreviousButtonClick() {
-        this.fetchPlanets(this.state.previous);
+        this.fetchPlanets(this.props.previous);
     }
 
     onNextButtonClick() {
-        this.fetchPlanets(this.state.next);
+        this.fetchPlanets(this.props.next);
     }
 
     onLogout() {
@@ -75,23 +67,23 @@ class Dashboard extends Component {
                                 <div className="form-group">
                                     <label htmlFor="exampleInputEmail1"><strong>Search for planet name</strong></label>
                                     <input type="email" className="form-control" value={this.state.searchText} onChange={this.handleChangeSearchText} id="exampleInputEmail1" aria-describedby="emailHelp" placeholder="Search planets" />
-                                    {!(this.state.loading) && <div>
-                                        {this.state.planets.length > 0 && this.state.planets.map((planet) => {
+                                    {!(this.props.loading) && <div>
+                                        {this.props.planets.length > 0 && this.props.planets.map((planet) => {
                                             return <div key={planet.name} className='dropdown'>
                                                 {planet.name}
                                             </div>
                                         })}
-                                        {this.state.planets.length === 0 && <div className='dropdown'>
+                                        {this.props.planets.length === 0 && <div className='dropdown'>
                                             No records found
                                         </div>
                                         }
-                                        {this.state.planets.length > 0 && <div style={{ marginTop: '10px', textAlign: 'center' }}>
-                                            <Button bsStyle="primary" onClick={this.onPreviousButtonClick} disabled={(this.state.previous) ? false : true}>previous</Button>
-                                            <Button bsStyle="primary" style={{ marginLeft: '10px' }} onClick={this.onNextButtonClick} disabled={(this.state.next) ? false : true}>next</Button>
+                                        {this.props.planets.length > 0 && <div style={{ marginTop: '10px', textAlign: 'center' }}>
+                                            <Button bsStyle="primary" onClick={this.onPreviousButtonClick} disabled={(this.props.previous) ? false : true}>previous</Button>
+                                            <Button bsStyle="primary" style={{ marginLeft: '10px' }} onClick={this.onNextButtonClick} disabled={(this.props.next) ? false : true}>next</Button>
                                         </div>
                                         }
                                     </div>}
-                                    {(this.state.loading) && <div>
+                                    {(this.props.loading) && <div>
                                         Fetching planets...
                                         </div>
                                     }
@@ -106,4 +98,20 @@ class Dashboard extends Component {
     }
 }
 
-export default Dashboard;
+export const mapStateToProps = ({ DashboardReducer }) => {
+    return {
+        loading: DashboardReducer.loading,
+        planets: DashboardReducer.planets,
+        next: DashboardReducer.next,
+        previous: DashboardReducer.previous,
+        error: DashboardReducer.error
+    }
+}
+
+export const mapDispatchToProps = (dispatch) => {
+    return {
+        searchPlanets: (searchText, url) => dispatch(searchPlanets(searchText, url))
+    }
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(Dashboard);
